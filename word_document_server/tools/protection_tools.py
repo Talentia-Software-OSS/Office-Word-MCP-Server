@@ -7,12 +7,13 @@ password protection, restricted editing, and digital signatures.
 import os
 import hashlib
 import datetime
-import io 
+import io
 from typing import List, Optional, Dict, Any
 from docx import Document
-import msoffcrypto 
+import msoffcrypto
 
 from word_document_server.utils.file_utils import check_file_writeable, ensure_docx_extension
+from word_document_server.utils.response_utils import sanitize_document_name
 
 
 
@@ -33,7 +34,8 @@ async def protect_document(filename: str, password: str) -> str:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -51,32 +53,34 @@ async def protect_document(filename: str, password: str) -> str:
 
         # Encrypt the data into an in-memory buffer
         encrypted_data_io = io.BytesIO()
-        
-        file.encrypt(password=password, outfile=encrypted_data_io) 
+
+        file.encrypt(password=password, outfile=encrypted_data_io)
 
         # Overwrite the original file with the encrypted data
         with open(filename, "wb") as outfile:
             outfile.write(encrypted_data_io.getvalue())
 
-        
+
         base_path, _ = os.path.splitext(filename)
         metadata_path = f"{base_path}.protection"
         if os.path.exists(metadata_path):
             os.remove(metadata_path)
 
-        return f"Document {filename} encrypted successfully with password."
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} encrypted successfully with password."
 
     except Exception as e:
         # Attempt to restore original file content on failure
+        safe_name = sanitize_document_name(filename)
         try:
             if 'original_data' in locals():
                 with open(filename, "wb") as outfile:
                     outfile.write(original_data)
-                return f"Failed to encrypt document {filename}: {str(e)}. Original file restored."
+                return f"Failed to encrypt document {safe_name}: {str(e)}. Original file restored."
             else:
-                 return f"Failed to encrypt document {filename}: {str(e)}. Could not restore original file."
+                 return f"Failed to encrypt document {safe_name}: {str(e)}. Could not restore original file."
         except Exception as restore_e:
-             return f"Failed to encrypt document {filename}: {str(e)}. Also failed to restore original file: {str(restore_e)}"
+             return f"Failed to encrypt document {safe_name}: {str(e)}. Also failed to restore original file: {str(restore_e)}"
 
 
 async def add_restricted_editing(filename: str, password: str, editable_sections: List[str]) -> str:
@@ -232,7 +236,8 @@ async def unprotect_document(filename: str, password: str) -> str:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -256,20 +261,24 @@ async def unprotect_document(filename: str, password: str) -> str:
         with open(filename, "wb") as outfile:
             outfile.write(decrypted_data_io.getvalue())
 
-        return f"Document {filename} decrypted successfully."
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} decrypted successfully."
 
     except msoffcrypto.exceptions.InvalidKeyError:
-         return f"Failed to decrypt document {filename}: Incorrect password."
+         safe_name = sanitize_document_name(filename)
+         return f"Failed to decrypt document {safe_name}: Incorrect password."
     except msoffcrypto.exceptions.InvalidFormatError:
-         return f"Failed to decrypt document {filename}: File is not encrypted or is not a supported Office format."
+         safe_name = sanitize_document_name(filename)
+         return f"Failed to decrypt document {safe_name}: File is not encrypted or is not a supported Office format."
     except Exception as e:
         # Attempt to restore encrypted file content on failure
+        safe_name = sanitize_document_name(filename)
         try:
             if 'encrypted_data' in locals():
                 with open(filename, "wb") as outfile:
                     outfile.write(encrypted_data)
-                return f"Failed to decrypt document {filename}: {str(e)}. Encrypted file restored."
+                return f"Failed to decrypt document {safe_name}: {str(e)}. Encrypted file restored."
             else:
-                 return f"Failed to decrypt document {filename}: {str(e)}. Could not restore encrypted file."
+                 return f"Failed to decrypt document {safe_name}: {str(e)}. Could not restore encrypted file."
         except Exception as restore_e:
-             return f"Failed to decrypt document {filename}: {str(e)}. Also failed to restore encrypted file: {str(restore_e)}"
+             return f"Failed to decrypt document {safe_name}: {str(e)}. Also failed to restore encrypted file: {str(restore_e)}"

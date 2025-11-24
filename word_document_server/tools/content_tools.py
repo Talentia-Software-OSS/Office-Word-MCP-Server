@@ -12,6 +12,7 @@ from docx.shared import Inches, Pt, RGBColor
 from word_document_server.utils.file_utils import check_file_writeable, ensure_docx_extension
 from word_document_server.utils.document_utils import find_and_replace_text, insert_header_near_text, insert_numbered_list_near_text, insert_line_or_paragraph_near_text, replace_paragraph_block_below_header, replace_block_between_manual_anchors
 from word_document_server.core.styles import ensure_heading_style, ensure_table_style
+from word_document_server.utils.response_utils import sanitize_document_name
 
 
 async def add_heading(filename: str, text: str, level: int = 1,
@@ -43,7 +44,8 @@ async def add_heading(filename: str, text: str, level: int = 1,
         return f"Invalid heading level: {level}. Level must be between 1 and 9."
 
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -105,7 +107,8 @@ async def add_heading(filename: str, text: str, level: int = 1,
             pPr.append(pBdr)
 
         doc.save(filename)
-        return f"Heading '{text}' (level {level}) added to {filename}"
+        safe_name = sanitize_document_name(filename)
+        return f"Heading '{text}' (level {level}) added to {safe_name}"
     except Exception as e:
         return f"Failed to add heading: {str(e)}"
 
@@ -129,7 +132,8 @@ async def add_paragraph(filename: str, text: str, style: Optional[str] = None,
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -148,7 +152,8 @@ async def add_paragraph(filename: str, text: str, style: Optional[str] = None,
                 # Style doesn't exist, use normal and report it
                 paragraph.style = doc.styles['Normal']
                 doc.save(filename)
-                return f"Style '{style}' not found, paragraph added with default style to {filename}"
+                safe_name = sanitize_document_name(filename)
+                return f"Style '{style}' not found, paragraph added with default style to {safe_name}"
 
         # Apply formatting to all runs in the paragraph
         if any([font_name, font_size, bold is not None, italic is not None, color]):
@@ -167,14 +172,15 @@ async def add_paragraph(filename: str, text: str, style: Optional[str] = None,
                     run.font.color.rgb = RGBColor.from_string(color_hex)
 
         doc.save(filename)
-        return f"Paragraph added to {filename}"
+        safe_name = sanitize_document_name(filename)
+        return f"Paragraph added to {safe_name}"
     except Exception as e:
         return f"Failed to add paragraph: {str(e)}"
 
 
 async def add_table(filename: str, rows: int, cols: int, data: Optional[List[List[str]]] = None) -> str:
     """Add a table to a Word document.
-    
+
     Args:
         filename: Path to the Word document
         rows: Number of rows in the table
@@ -182,27 +188,28 @@ async def add_table(filename: str, rows: int, cols: int, data: Optional[List[Lis
         data: Optional 2D array of data to fill the table
     """
     filename = ensure_docx_extension(filename)
-    
+
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
-    
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
+
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
     if not is_writeable:
         # Suggest creating a copy
         return f"Cannot modify document: {error_message}. Consider creating a copy first or creating a new document."
-    
+
     try:
         doc = Document(filename)
         table = doc.add_table(rows=rows, cols=cols)
-        
+
         # Try to set the table style
         try:
             table.style = 'Table Grid'
         except KeyError:
             # If style doesn't exist, add basic borders
             pass
-        
+
         # Fill table with data if provided
         if data:
             for i, row_data in enumerate(data):
@@ -212,35 +219,37 @@ async def add_table(filename: str, rows: int, cols: int, data: Optional[List[Lis
                     if j >= cols:
                         break
                     table.cell(i, j).text = str(cell_text)
-        
+
         doc.save(filename)
-        return f"Table ({rows}x{cols}) added to {filename}"
+        safe_name = sanitize_document_name(filename)
+        return f"Table ({rows}x{cols}) added to {safe_name}"
     except Exception as e:
         return f"Failed to add table: {str(e)}"
 
 
 async def add_picture(filename: str, image_path: str, width: Optional[float] = None) -> str:
     """Add an image to a Word document.
-    
+
     Args:
         filename: Path to the Word document
         image_path: Path to the image file
         width: Optional width in inches (proportional scaling)
     """
     filename = ensure_docx_extension(filename)
-    
+
     # Validate document existence
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
-    
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
+
     # Get absolute paths for better diagnostics
     abs_filename = os.path.abspath(filename)
     abs_image_path = os.path.abspath(image_path)
-    
+
     # Validate image existence with improved error message
     if not os.path.exists(abs_image_path):
         return f"Image file not found: {abs_image_path}"
-    
+
     # Check image file size
     try:
         image_size = os.path.getsize(abs_image_path) / 1024  # Size in KB
@@ -248,24 +257,25 @@ async def add_picture(filename: str, image_path: str, width: Optional[float] = N
             return f"Image file appears to be empty: {abs_image_path} (0 KB)"
     except Exception as size_error:
         return f"Error checking image file: {str(size_error)}"
-    
+
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(abs_filename)
     if not is_writeable:
         return f"Cannot modify document: {error_message}. Consider creating a copy first or creating a new document."
-    
+
     try:
         doc = Document(abs_filename)
         # Additional diagnostic info
         diagnostic = f"Attempting to add image ({abs_image_path}, {image_size:.2f} KB) to document ({abs_filename})"
-        
+
         try:
             if width:
                 doc.add_picture(abs_image_path, width=Inches(width))
             else:
                 doc.add_picture(abs_image_path)
             doc.save(abs_filename)
-            return f"Picture {image_path} added to {filename}"
+            safe_name = sanitize_document_name(filename)
+            return f"Picture {image_path} added to {safe_name}"
         except Exception as inner_error:
             # More detailed error for the specific operation
             error_type = type(inner_error).__name__
@@ -280,53 +290,56 @@ async def add_picture(filename: str, image_path: str, width: Optional[float] = N
 
 async def add_page_break(filename: str) -> str:
     """Add a page break to the document.
-    
+
     Args:
         filename: Path to the Word document
     """
     filename = ensure_docx_extension(filename)
-    
+
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
-    
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
+
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
     if not is_writeable:
         return f"Cannot modify document: {error_message}. Consider creating a copy first."
-    
+
     try:
         doc = Document(filename)
         doc.add_page_break()
         doc.save(filename)
-        return f"Page break added to {filename}."
+        safe_name = sanitize_document_name(filename)
+        return f"Page break added to {safe_name}."
     except Exception as e:
         return f"Failed to add page break: {str(e)}"
 
 
 async def add_table_of_contents(filename: str, title: str = "Table of Contents", max_level: int = 3) -> str:
     """Add a table of contents to a Word document based on heading styles.
-    
+
     Args:
         filename: Path to the Word document
         title: Optional title for the table of contents
         max_level: Maximum heading level to include (1-9)
     """
     filename = ensure_docx_extension(filename)
-    
+
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
-    
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
+
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
     if not is_writeable:
         return f"Cannot modify document: {error_message}. Consider creating a copy first."
-    
+
     try:
         # Ensure max_level is within valid range
         max_level = max(1, min(max_level, 9))
-        
+
         doc = Document(filename)
-        
+
         # Collect headings and their positions
         headings = []
         for i, paragraph in enumerate(doc.paragraphs):
@@ -344,26 +357,27 @@ async def add_table_of_contents(filename: str, title: str = "Table of Contents",
                 except (ValueError, IndexError):
                     # Skip if heading level can't be determined
                     pass
-        
+
         if not headings:
-            return f"No headings found in document {filename}. Table of contents not created."
-        
+            safe_name = sanitize_document_name(filename)
+            return f"No headings found in document {safe_name}. Table of contents not created."
+
         # Create a new document with the TOC
         toc_doc = Document()
-        
+
         # Add title
         if title:
             toc_doc.add_heading(title, level=1)
-        
+
         # Add TOC entries
         for heading in headings:
             # Indent based on level (using tab characters)
             indent = '    ' * (heading['level'] - 1)
             toc_doc.add_paragraph(f"{indent}{heading['text']}")
-        
+
         # Add page break
         toc_doc.add_page_break()
-        
+
         # Get content from original document
         for paragraph in doc.paragraphs:
             p = toc_doc.add_paragraph(paragraph.text)
@@ -373,7 +387,7 @@ async def add_table_of_contents(filename: str, title: str = "Table of Contents",
                     p.style = paragraph.style.name
             except:
                 pass
-        
+
         # Copy tables
         for table in doc.tables:
             # Create a new table with the same dimensions
@@ -383,45 +397,47 @@ async def add_table_of_contents(filename: str, title: str = "Table of Contents",
                 for j, cell in enumerate(row.cells):
                     for paragraph in cell.paragraphs:
                         new_table.cell(i, j).text = paragraph.text
-        
+
         # Save the new document with TOC
         toc_doc.save(filename)
-        
-        return f"Table of contents with {len(headings)} entries added to {filename}"
+
+        safe_name = sanitize_document_name(filename)
+        return f"Table of contents with {len(headings)} entries added to {safe_name}"
     except Exception as e:
         return f"Failed to add table of contents: {str(e)}"
 
 
 async def delete_paragraph(filename: str, paragraph_index: int) -> str:
     """Delete a paragraph from a document.
-    
+
     Args:
         filename: Path to the Word document
         paragraph_index: Index of the paragraph to delete (0-based)
     """
     filename = ensure_docx_extension(filename)
-    
+
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
-    
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
+
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
     if not is_writeable:
         return f"Cannot modify document: {error_message}. Consider creating a copy first."
-    
+
     try:
         doc = Document(filename)
-        
+
         # Validate paragraph index
         if paragraph_index < 0 or paragraph_index >= len(doc.paragraphs):
             return f"Invalid paragraph index. Document has {len(doc.paragraphs)} paragraphs (0-{len(doc.paragraphs)-1})."
-        
+
         # Delete the paragraph (by removing its content and setting it empty)
         # Note: python-docx doesn't support true paragraph deletion, this is a workaround
         paragraph = doc.paragraphs[paragraph_index]
         p = paragraph._p
         p.getparent().remove(p)
-        
+
         doc.save(filename)
         return f"Paragraph at index {paragraph_index} deleted successfully."
     except Exception as e:
@@ -430,28 +446,29 @@ async def delete_paragraph(filename: str, paragraph_index: int) -> str:
 
 async def search_and_replace(filename: str, find_text: str, replace_text: str) -> str:
     """Search for text and replace all occurrences.
-    
+
     Args:
         filename: Path to the Word document
         find_text: Text to search for
         replace_text: Text to replace with
     """
     filename = ensure_docx_extension(filename)
-    
+
     if not os.path.exists(filename):
-        return f"Document {filename} does not exist"
-    
+        safe_name = sanitize_document_name(filename)
+        return f"Document {safe_name} does not exist"
+
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
     if not is_writeable:
         return f"Cannot modify document: {error_message}. Consider creating a copy first."
-    
+
     try:
         doc = Document(filename)
-        
+
         # Perform find and replace
         count = find_and_replace_text(doc, find_text, replace_text)
-        
+
         if count > 0:
             doc.save(filename)
             return f"Replaced {count} occurrence(s) of '{find_text}' with '{replace_text}'."
@@ -462,20 +479,25 @@ async def search_and_replace(filename: str, find_text: str, replace_text: str) -
 
 async def insert_header_near_text_tool(filename: str, target_text: str = None, header_title: str = "", position: str = 'after', header_style: str = 'Heading 1', target_paragraph_index: int = None) -> str:
     """Insert a header (with specified style) before or after the target paragraph. Specify by text or paragraph index."""
+    filename = ensure_docx_extension(filename)
     return insert_header_near_text(filename, target_text, header_title, position, header_style, target_paragraph_index)
 
 async def insert_numbered_list_near_text_tool(filename: str, target_text: str = None, list_items: list = None, position: str = 'after', target_paragraph_index: int = None, bullet_type: str = 'bullet') -> str:
     """Insert a bulleted or numbered list before or after the target paragraph. Specify by text or paragraph index."""
+    filename = ensure_docx_extension(filename)
     return insert_numbered_list_near_text(filename, target_text, list_items, position, target_paragraph_index, bullet_type)
 
 async def insert_line_or_paragraph_near_text_tool(filename: str, target_text: str = None, line_text: str = "", position: str = 'after', line_style: str = None, target_paragraph_index: int = None) -> str:
     """Insert a new line or paragraph (with specified or matched style) before or after the target paragraph. Specify by text or paragraph index."""
+    filename = ensure_docx_extension(filename)
     return insert_line_or_paragraph_near_text(filename, target_text, line_text, position, line_style, target_paragraph_index)
 
 async def replace_paragraph_block_below_header_tool(filename: str, header_text: str, new_paragraphs: list, detect_block_end_fn=None) -> str:
     """Reemplaza el bloque de párrafos debajo de un encabezado, evitando modificar TOC."""
+    filename = ensure_docx_extension(filename)
     return replace_paragraph_block_below_header(filename, header_text, new_paragraphs, detect_block_end_fn)
 
 async def replace_block_between_manual_anchors_tool(filename: str, start_anchor_text: str, new_paragraphs: list, end_anchor_text: str = None, match_fn=None, new_paragraph_style: str = None) -> str:
     """Replace all content between start_anchor_text and end_anchor_text (or next logical header if not provided)."""
+    filename = ensure_docx_extension(filename)
     return replace_block_between_manual_anchors(filename, start_anchor_text, new_paragraphs, end_anchor_text, match_fn, new_paragraph_style)
