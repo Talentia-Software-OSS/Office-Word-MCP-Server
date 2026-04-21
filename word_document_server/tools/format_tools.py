@@ -20,7 +20,7 @@ from word_document_server.core.tables import (
     set_column_widths, set_table_width as set_table_width_func, auto_fit_table,
     format_cell_text_by_position, set_cell_padding_by_position
 )
-from word_document_server.utils.response_utils import sanitize_document_name
+# sanitize_document_name removed — path scrubbing handled centrally by agent-service
 
 
 async def format_text(filename: str, paragraph_index: int, start_pos: int, end_pos: int,
@@ -54,8 +54,8 @@ async def format_text(filename: str, paragraph_index: int, start_pos: int, end_p
         return "Invalid parameter: paragraph_index, start_pos, end_pos, and font_size must be integers"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -153,8 +153,8 @@ async def create_custom_style(filename: str, style_name: str,
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -208,8 +208,8 @@ async def format_table(filename: str, table_index: int,
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -260,8 +260,8 @@ async def set_table_cell_shading(filename: str, table_index: int, row_index: int
         return "Invalid parameter: table_index, row_index, and col_index must be integers"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -315,8 +315,8 @@ async def apply_table_alternating_rows(filename: str, table_index: int,
         return "Invalid parameter: table_index must be an integer"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -363,8 +363,8 @@ async def highlight_table_header(filename: str, table_index: int,
         return "Invalid parameter: table_index must be an integer"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -417,8 +417,8 @@ async def merge_table_cells(filename: str, table_index: int, start_row: int, sta
         return "Invalid parameter: all indices must be integers"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -476,8 +476,8 @@ async def merge_table_cells_horizontal(filename: str, table_index: int, row_inde
         return "Invalid parameter: all indices must be integers"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -528,8 +528,8 @@ async def merge_table_cells_vertical(filename: str, table_index: int, col_index:
         return "Invalid parameter: all indices must be integers"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -590,8 +590,8 @@ async def set_table_cell_alignment(filename: str, table_index: int, row_index: i
         return f"Invalid vertical alignment. Valid options: {', '.join(valid_vertical)}"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -648,8 +648,8 @@ async def set_table_alignment_all(filename: str, table_index: int,
         return f"Invalid vertical alignment. Valid options: {', '.join(valid_vertical)}"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -705,8 +705,8 @@ async def set_table_column_width(filename: str, table_index: int, col_index: int
         return f"Invalid width type. Valid options: {', '.join(valid_width_types)}"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -785,8 +785,8 @@ async def set_table_column_widths(filename: str, table_index: int, widths: list,
         return f"Invalid width type. Valid options: {', '.join(valid_width_types)}"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -862,8 +862,8 @@ async def set_table_width(filename: str, table_index: int, width: float,
         return f"Invalid width type. Valid options: {', '.join(valid_width_types)}"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -924,8 +924,8 @@ async def auto_fit_table_columns(filename: str, table_index: int) -> str:
         return "Invalid parameter: table_index must be an integer"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -985,8 +985,8 @@ async def format_table_cell_text(filename: str, table_index: int, row_index: int
         return "Invalid parameter: table_index, row_index, col_index must be integers, font_size must be integer"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -1079,8 +1079,8 @@ async def set_table_cell_padding(filename: str, table_index: int, row_index: int
         return f"Invalid unit. Valid options: {', '.join(valid_units)}"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)

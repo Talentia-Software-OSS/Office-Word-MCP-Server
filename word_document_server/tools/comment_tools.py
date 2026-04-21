@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 from docx import Document
 
 from word_document_server.utils.file_utils import ensure_docx_extension
-from word_document_server.utils.response_utils import sanitize_document_name
+# sanitize_document_name removed — path scrubbing handled centrally by agent-service
 from word_document_server.core.comments import (
     extract_all_comments,
     filter_comments_by_author,
@@ -31,10 +31,10 @@ async def get_all_comments(filename: str) -> str:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
         return json.dumps({
             'success': False,
-            'error': f'Document {safe_name} does not exist'
+            'error': f'Document {filename} does not exist'
         }, indent=2)
 
     try:
@@ -72,10 +72,10 @@ async def get_comments_by_author(filename: str, author: str) -> str:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
         return json.dumps({
             'success': False,
-            'error': f'Document {safe_name} does not exist'
+            'error': f'Document {filename} does not exist'
         }, indent=2)
 
     if not author or not author.strip():
@@ -123,10 +123,10 @@ async def get_comments_for_paragraph(filename: str, paragraph_index: int) -> str
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
         return json.dumps({
             'success': False,
-            'error': f'Document {safe_name} does not exist'
+            'error': f'Document {filename} does not exist'
         }, indent=2)
 
     if paragraph_index < 0:

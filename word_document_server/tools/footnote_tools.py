@@ -15,7 +15,7 @@ from docx.shared import Pt
 from docx.enum.style import WD_STYLE_TYPE
 
 from word_document_server.utils.file_utils import check_file_writeable, ensure_docx_extension
-from word_document_server.utils.response_utils import sanitize_document_name
+# sanitize_document_name removed — path scrubbing handled centrally by agent-service
 from word_document_server.core.footnotes import (
     find_footnote_references,
     get_format_symbols,
@@ -44,8 +44,8 @@ async def add_footnote_to_document(filename: str, paragraph_index: int, footnote
         return "Invalid parameter: paragraph_index must be an integer"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -70,8 +70,8 @@ async def add_footnote_to_document(filename: str, paragraph_index: int, footnote
             reference = footnote.add_footnote(footnote_text)
 
             doc.save(filename)
-            safe_name = sanitize_document_name(filename)
-            return f"Footnote added to paragraph {paragraph_index} in {safe_name}"
+            # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+            return f"Footnote added to paragraph {paragraph_index} in {filename}"
         except AttributeError:
             # Fall back to a simpler approach if direct footnote addition fails
             last_run = paragraph.add_run()
@@ -94,8 +94,8 @@ async def add_footnote_to_document(filename: str, paragraph_index: int, footnote
             footnote_para.style = "Footnote Text" if "Footnote Text" in doc.styles else "Normal"
 
             doc.save(filename)
-            safe_name = sanitize_document_name(filename)
-            return f"Footnote added to paragraph {paragraph_index} in {safe_name} (simplified approach)"
+            # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+            return f"Footnote added to paragraph {paragraph_index} in {filename} (simplified approach)"
     except Exception as e:
         return f"Failed to add footnote: {str(e)}"
 
@@ -117,8 +117,8 @@ async def add_endnote_to_document(filename: str, paragraph_index: int, endnote_t
         return "Invalid parameter: paragraph_index must be an integer"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -156,8 +156,8 @@ async def add_endnote_to_document(filename: str, paragraph_index: int, endnote_t
         endnote_para.style = "Endnote Text" if "Endnote Text" in doc.styles else "Normal"
 
         doc.save(filename)
-        safe_name = sanitize_document_name(filename)
-        return f"Endnote added to paragraph {paragraph_index} in {safe_name}"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Endnote added to paragraph {paragraph_index} in {filename}"
     except Exception as e:
         return f"Failed to add endnote: {str(e)}"
 
@@ -261,8 +261,8 @@ async def add_footnote_after_text(filename: str, search_text: str, footnote_text
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -299,8 +299,8 @@ async def add_footnote_before_text(filename: str, search_text: str, footnote_tex
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -343,8 +343,8 @@ async def add_footnote_enhanced(filename: str, paragraph_index: int, footnote_te
         return "Invalid parameter: paragraph_index must be an integer"
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -380,8 +380,8 @@ async def customize_footnote_style(filename: str, numbering_format: str = "1, 2,
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -420,8 +420,8 @@ async def customize_footnote_style(filename: str, numbering_format: str = "1, 2,
         # Save the document
         doc.save(filename)
 
-        safe_name = sanitize_document_name(filename)
-        return f"Footnote style and numbering customized in {safe_name}"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Footnote style and numbering customized in {filename}"
     except Exception as e:
         return f"Failed to customize footnote style: {str(e)}"
 
@@ -444,8 +444,8 @@ async def delete_footnote_from_document(filename: str, footnote_id: Optional[int
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -609,10 +609,10 @@ async def validate_footnotes_tool(filename: str) -> Dict[str, Any]:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
         return {
             "valid": False,
-            "message": f"Document {safe_name} does not exist",
+            "message": f"Document {filename} does not exist",
             "report": {}
         }
 

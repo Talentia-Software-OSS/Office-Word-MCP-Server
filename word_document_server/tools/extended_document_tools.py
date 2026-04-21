@@ -13,7 +13,7 @@ from docx import Document
 
 from word_document_server.utils.file_utils import check_file_writeable, ensure_docx_extension
 from word_document_server.utils.extended_document_utils import get_paragraph_text, find_text
-from word_document_server.utils.response_utils import sanitize_document_name
+# sanitize_document_name removed — path scrubbing handled centrally by agent-service
 
 
 async def get_paragraph_text_from_document(filename: str, paragraph_index: int) -> str:
@@ -26,8 +26,8 @@ async def get_paragraph_text_from_document(filename: str, paragraph_index: int) 
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
 
     if paragraph_index < 0:
@@ -52,8 +52,8 @@ async def find_text_in_document(filename: str, text_to_find: str, match_case: bo
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     if not text_to_find:
         return "Search text cannot be empty"
@@ -77,8 +77,8 @@ async def convert_to_pdf(filename: str, output_filename: Optional[str] = None) -
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Generate output filename if not provided
     if not output_filename:

@@ -8,7 +8,7 @@ from docx import Document
 
 from word_document_server.utils.file_utils import check_file_writeable, ensure_docx_extension, create_document_copy
 from word_document_server.utils.document_utils import get_document_properties, extract_document_text, get_document_structure, get_document_xml, insert_header_near_text, insert_line_or_paragraph_near_text
-from word_document_server.utils.response_utils import sanitize_document_name
+# sanitize_document_name removed — path scrubbing handled centrally by agent-service
 from word_document_server.core.styles import ensure_heading_style, ensure_table_style
 
 
@@ -43,8 +43,8 @@ async def create_document(filename: str, title: Optional[str] = None, author: Op
         # Save the document
         doc.save(filename)
 
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} created successfully"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} created successfully"
     except Exception as e:
         return f"Failed to create document: {str(e)}"
 
@@ -58,8 +58,8 @@ async def get_document_info(filename: str) -> str:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     try:
         properties = get_document_properties(filename)
@@ -207,8 +207,8 @@ async def merge_documents(target_filename: str, source_filenames: List[str], add
 
         # Save the merged document
         target_doc.save(target_filename)
-        safe_name = sanitize_document_name(target_filename)
-        return f"Successfully merged {len(source_filenames)} documents into {safe_name}"
+        filename = sanitize_document_name(target_filename)
+        return f"Successfully merged {len(source_filenames)} documents into {filename}"
     except Exception as e:
         return f"Failed to merge documents: {str(e)}"
 

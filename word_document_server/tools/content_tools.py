@@ -12,7 +12,7 @@ from docx.shared import Inches, Pt, RGBColor
 from word_document_server.utils.file_utils import check_file_writeable, ensure_docx_extension
 from word_document_server.utils.document_utils import find_and_replace_text, insert_header_near_text, insert_numbered_list_near_text, insert_line_or_paragraph_near_text, replace_paragraph_block_below_header, replace_block_between_manual_anchors
 from word_document_server.core.styles import ensure_heading_style, ensure_table_style
-from word_document_server.utils.response_utils import sanitize_document_name
+# sanitize_document_name removed — path scrubbing handled centrally by agent-service
 
 
 async def add_heading(filename: str, text: str, level: int = 1,
@@ -44,8 +44,8 @@ async def add_heading(filename: str, text: str, level: int = 1,
         return f"Invalid heading level: {level}. Level must be between 1 and 9."
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -107,8 +107,8 @@ async def add_heading(filename: str, text: str, level: int = 1,
             pPr.append(pBdr)
 
         doc.save(filename)
-        safe_name = sanitize_document_name(filename)
-        return f"Heading '{text}' (level {level}) added to {safe_name}"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Heading '{text}' (level {level}) added to {filename}"
     except Exception as e:
         return f"Failed to add heading: {str(e)}"
 
@@ -132,8 +132,8 @@ async def add_paragraph(filename: str, text: str, style: Optional[str] = None,
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -152,8 +152,8 @@ async def add_paragraph(filename: str, text: str, style: Optional[str] = None,
                 # Style doesn't exist, use normal and report it
                 paragraph.style = doc.styles['Normal']
                 doc.save(filename)
-                safe_name = sanitize_document_name(filename)
-                return f"Style '{style}' not found, paragraph added with default style to {safe_name}"
+                # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+                return f"Style '{style}' not found, paragraph added with default style to {filename}"
 
         # Apply formatting to all runs in the paragraph
         if any([font_name, font_size, bold is not None, italic is not None, color]):
@@ -172,8 +172,8 @@ async def add_paragraph(filename: str, text: str, style: Optional[str] = None,
                     run.font.color.rgb = RGBColor.from_string(color_hex)
 
         doc.save(filename)
-        safe_name = sanitize_document_name(filename)
-        return f"Paragraph added to {safe_name}"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Paragraph added to {filename}"
     except Exception as e:
         return f"Failed to add paragraph: {str(e)}"
 
@@ -190,8 +190,8 @@ async def add_table(filename: str, rows: int, cols: int, data: Optional[List[Lis
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -221,8 +221,8 @@ async def add_table(filename: str, rows: int, cols: int, data: Optional[List[Lis
                     table.cell(i, j).text = str(cell_text)
 
         doc.save(filename)
-        safe_name = sanitize_document_name(filename)
-        return f"Table ({rows}x{cols}) added to {safe_name}"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Table ({rows}x{cols}) added to {filename}"
     except Exception as e:
         return f"Failed to add table: {str(e)}"
 
@@ -239,8 +239,8 @@ async def add_picture(filename: str, image_path: str, width: Optional[float] = N
 
     # Validate document existence
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Get absolute paths for better diagnostics
     abs_filename = os.path.abspath(filename)
@@ -274,8 +274,8 @@ async def add_picture(filename: str, image_path: str, width: Optional[float] = N
             else:
                 doc.add_picture(abs_image_path)
             doc.save(abs_filename)
-            safe_name = sanitize_document_name(filename)
-            return f"Picture {image_path} added to {safe_name}"
+            # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+            return f"Picture {image_path} added to {filename}"
         except Exception as inner_error:
             # More detailed error for the specific operation
             error_type = type(inner_error).__name__
@@ -297,8 +297,8 @@ async def add_page_break(filename: str) -> str:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -309,8 +309,8 @@ async def add_page_break(filename: str) -> str:
         doc = Document(filename)
         doc.add_page_break()
         doc.save(filename)
-        safe_name = sanitize_document_name(filename)
-        return f"Page break added to {safe_name}."
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Page break added to {filename}."
     except Exception as e:
         return f"Failed to add page break: {str(e)}"
 
@@ -326,8 +326,8 @@ async def add_table_of_contents(filename: str, title: str = "Table of Contents",
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -359,8 +359,8 @@ async def add_table_of_contents(filename: str, title: str = "Table of Contents",
                     pass
 
         if not headings:
-            safe_name = sanitize_document_name(filename)
-            return f"No headings found in document {safe_name}. Table of contents not created."
+            # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+            return f"No headings found in document {filename}. Table of contents not created."
 
         # Create a new document with the TOC
         toc_doc = Document()
@@ -401,8 +401,8 @@ async def add_table_of_contents(filename: str, title: str = "Table of Contents",
         # Save the new document with TOC
         toc_doc.save(filename)
 
-        safe_name = sanitize_document_name(filename)
-        return f"Table of contents with {len(headings)} entries added to {safe_name}"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Table of contents with {len(headings)} entries added to {filename}"
     except Exception as e:
         return f"Failed to add table of contents: {str(e)}"
 
@@ -417,8 +417,8 @@ async def delete_paragraph(filename: str, paragraph_index: int) -> str:
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
@@ -455,8 +455,8 @@ async def search_and_replace(filename: str, find_text: str, replace_text: str) -
     filename = ensure_docx_extension(filename)
 
     if not os.path.exists(filename):
-        safe_name = sanitize_document_name(filename)
-        return f"Document {safe_name} does not exist"
+        # sanitize_document_name removed — agent-service sanitizer handles path scrubbing
+        return f"Document {filename} does not exist"
 
     # Check if file is writeable
     is_writeable, error_message = check_file_writeable(filename)
