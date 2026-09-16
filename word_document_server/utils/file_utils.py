@@ -63,8 +63,12 @@ def create_document_copy(source_path: str, dest_path: Optional[str] = None) -> T
         dest_path = f"{base}_copy{ext}"
     
     try:
-        # Simple file copy
-        shutil.copy2(source_path, dest_path)
+        # Simple file copy.  copyfile, not copy2: on an SMB/CIFS share (Azure
+        # Files) whose inodes report a different owner than the running
+        # process, copy2's copystat raises PermissionError(EPERM) from
+        # os.utime/os.chmod AFTER the bytes have landed.  A document copy has
+        # no use for the source's mode or mtime.
+        shutil.copyfile(source_path, dest_path)
         return True, f"Document copied to {dest_path}", dest_path
     except Exception as e:
         return False, f"Failed to copy document: {str(e)}", None

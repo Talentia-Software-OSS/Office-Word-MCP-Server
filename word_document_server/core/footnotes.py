@@ -310,7 +310,8 @@ def add_footnote_robust(
     working_file = output_filename if output_filename else filename
     if output_filename and filename != output_filename:
         import shutil
-        shutil.copy2(filename, output_filename)
+        # copyfile, not copy2: copystat raises EPERM on SMB/CIFS shares.
+        shutil.copyfile(filename, output_filename)
     
     try:
         # Read document parts
@@ -508,7 +509,8 @@ def delete_footnote_robust(
     working_file = output_filename if output_filename else filename
     if output_filename and filename != output_filename:
         import shutil
-        shutil.copy2(filename, output_filename)
+        # copyfile, not copy2: copystat raises EPERM on SMB/CIFS shares.
+        shutil.copyfile(filename, output_filename)
     
     try:
         # Read document parts

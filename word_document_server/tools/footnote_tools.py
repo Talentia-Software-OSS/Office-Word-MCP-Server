@@ -661,7 +661,8 @@ async def add_footnote_after_text_robust(
     working_file = filename
     if output_filename:
         import shutil
-        shutil.copy2(filename, output_filename)
+        # copyfile, not copy2: copystat raises EPERM on SMB/CIFS shares.
+        shutil.copyfile(filename, output_filename)
         working_file = output_filename
 
     result = await add_footnote_robust_tool(
@@ -686,7 +687,8 @@ async def add_footnote_before_text_robust(
     working_file = filename
     if output_filename:
         import shutil
-        shutil.copy2(filename, output_filename)
+        # copyfile, not copy2: copystat raises EPERM on SMB/CIFS shares.
+        shutil.copyfile(filename, output_filename)
         working_file = output_filename
 
     result = await add_footnote_robust_tool(
@@ -711,7 +713,8 @@ async def delete_footnote_from_document_robust(
     working_file = filename
     if output_filename:
         import shutil
-        shutil.copy2(filename, output_filename)
+        # copyfile, not copy2: copystat raises EPERM on SMB/CIFS shares.
+        shutil.copyfile(filename, output_filename)
         working_file = output_filename
 
     result = await delete_footnote_robust_tool(
