@@ -43,6 +43,38 @@ def check_file_writeable(filepath: str) -> Tuple[bool, str]:
         return False, f"Unknown error checking file permissions: {str(e)}"
 
 
+def copy_document_bytes(source_path: str, dest_path: str) -> None:
+    """Copy bytes, creating new destinations privately without stamping metadata.
+
+    Existing destinations retain their permissions. Fixed-mode mounts such as
+    Azure Files enforce their mount permissions instead of the requested 0600.
+    """
+    created_stat = None
+    try:
+        fd = os.open(dest_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        pass
+    else:
+        try:
+            created_stat = os.fstat(fd)
+        finally:
+            os.close(fd)
+    # Keep copyfile's same-file checks and byte-only copying. No chmod/copystat:
+    # these can fail with EPERM on writable, differently owned SMB/CIFS files.
+    try:
+        shutil.copyfile(source_path, dest_path)
+    except Exception:
+        if created_stat is not None:
+            try:
+                # Best-effort identity check: do not remove an observed
+                # replacement or follow a replacement symlink during cleanup.
+                if os.path.samestat(created_stat, os.lstat(dest_path)):
+                    os.unlink(dest_path)
+            except FileNotFoundError:
+                pass
+        raise
+
+
 def create_document_copy(source_path: str, dest_path: Optional[str] = None) -> Tuple[bool, str, Optional[str]]:
     """
     Create a copy of a document.
@@ -63,8 +95,7 @@ def create_document_copy(source_path: str, dest_path: Optional[str] = None) -> T
         dest_path = f"{base}_copy{ext}"
     
     try:
-        # Simple file copy
-        shutil.copy2(source_path, dest_path)
+        copy_document_bytes(source_path, dest_path)
         return True, f"Document copied to {dest_path}", dest_path
     except Exception as e:
         return False, f"Failed to copy document: {str(e)}", None

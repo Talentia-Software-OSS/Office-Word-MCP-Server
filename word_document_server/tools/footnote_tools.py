@@ -14,7 +14,9 @@ from docx import Document
 from docx.shared import Pt
 from docx.enum.style import WD_STYLE_TYPE
 
-from word_document_server.utils.file_utils import check_file_writeable, ensure_docx_extension
+from word_document_server.utils.file_utils import (
+    check_file_writeable, copy_document_bytes, ensure_docx_extension,
+)
 # sanitize_document_name removed — path scrubbing handled centrally by agent-service
 from word_document_server.core.footnotes import (
     find_footnote_references,
@@ -660,8 +662,7 @@ async def add_footnote_after_text_robust(
     # Handle output filename by copying first if needed
     working_file = filename
     if output_filename:
-        import shutil
-        shutil.copy2(filename, output_filename)
+        copy_document_bytes(filename, output_filename)
         working_file = output_filename
 
     result = await add_footnote_robust_tool(
@@ -685,8 +686,7 @@ async def add_footnote_before_text_robust(
     # Handle output filename
     working_file = filename
     if output_filename:
-        import shutil
-        shutil.copy2(filename, output_filename)
+        copy_document_bytes(filename, output_filename)
         working_file = output_filename
 
     result = await add_footnote_robust_tool(
@@ -710,8 +710,7 @@ async def delete_footnote_from_document_robust(
     # Handle output filename
     working_file = filename
     if output_filename:
-        import shutil
-        shutil.copy2(filename, output_filename)
+        copy_document_bytes(filename, output_filename)
         working_file = output_filename
 
     result = await delete_footnote_robust_tool(

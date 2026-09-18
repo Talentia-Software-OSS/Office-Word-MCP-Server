@@ -52,10 +52,13 @@ def add_protection_info(doc_path: str, protection_type: str, password_hash: str,
         if protection_type == "password" and raw_password:
             import msoffcrypto
             import tempfile
-            import shutil
             
-            # Create a temporary file for the encrypted output
-            temp_fd, temp_path = tempfile.mkstemp(suffix='.docx')
+            # Stage the encrypted output in the document's own directory: a temp
+            # file on another filesystem makes shutil.move fall back to copy2,
+            # whose copystat raises EPERM on an SMB/CIFS share (Azure Files)
+            # after the encrypted bytes have already overwritten doc_path.
+            temp_dir = os.path.dirname(os.path.abspath(doc_path)) or "."
+            temp_fd, temp_path = tempfile.mkstemp(prefix='.', suffix='.docx', dir=temp_dir)
             os.close(temp_fd)
             
             try:
@@ -70,8 +73,9 @@ def add_protection_info(doc_path: str, protection_type: str, password_hash: str,
                     with open(temp_path, 'wb') as out_file:
                         office_file.encrypt(out_file)
                 
-                # Replace original with encrypted version
-                shutil.move(temp_path, doc_path)
+                # Replace original with encrypted version: atomic within the
+                # mount, and no metadata call to be denied.
+                os.replace(temp_path, doc_path)
                 
                 # Update metadata to note that true encryption was applied
                 protection_data["true_encryption"] = True
@@ -80,9 +84,10 @@ def add_protection_info(doc_path: str, protection_type: str, password_hash: str,
                     
             except Exception as e:
                 print(f"Encryption error: {str(e)}")
+                return False
+            finally:
                 if os.path.exists(temp_path):
                     os.unlink(temp_path)
-                return False
         
         return True
     except Exception as e:

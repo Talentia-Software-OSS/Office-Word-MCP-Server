@@ -10,6 +10,7 @@ from typing import Optional, Tuple, Dict, Any, List
 from lxml import etree
 from docx import Document
 from docx.oxml.ns import qn
+from word_document_server.utils.file_utils import copy_document_bytes
 
 # Namespace definitions
 W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
@@ -309,9 +310,9 @@ def add_footnote_robust(
     # Set working file
     working_file = output_filename if output_filename else filename
     if output_filename and filename != output_filename:
-        import shutil
-        shutil.copy2(filename, output_filename)
+        copy_document_bytes(filename, output_filename)
     
+    temp_file = None
     try:
         # Read document parts
         doc_parts = {}
@@ -448,7 +449,11 @@ def add_footnote_robust(
         document_rels_xml = _ensure_document_rels(doc_parts['document_rels'])
         
         # Write modified document
-        temp_file = working_file + '.tmp'
+        # The replacement must also be private from creation, like the copy.
+        temp_fd, temp_file = tempfile.mkstemp(
+            prefix='.', suffix='.docx', dir=os.path.dirname(os.path.abspath(working_file))
+        )
+        os.close(temp_fd)
         with zipfile.ZipFile(temp_file, 'w', zipfile.ZIP_DEFLATED) as zout:
             with zipfile.ZipFile(filename, 'r') as zin:
                 # Copy unchanged files
@@ -483,8 +488,7 @@ def add_footnote_robust(
         
     except Exception as e:
         # Clean up temp file if exists
-        temp_file = working_file + '.tmp'
-        if os.path.exists(temp_file):
+        if temp_file and os.path.exists(temp_file):
             os.remove(temp_file)
         return False, f"Error adding footnote: {str(e)}", None
 
@@ -507,9 +511,9 @@ def delete_footnote_robust(
     # Set working file
     working_file = output_filename if output_filename else filename
     if output_filename and filename != output_filename:
-        import shutil
-        shutil.copy2(filename, output_filename)
+        copy_document_bytes(filename, output_filename)
     
+    temp_file = None
     try:
         # Read document parts
         with zipfile.ZipFile(filename, 'r') as zin:
@@ -578,7 +582,11 @@ def delete_footnote_robust(
                     orphans_removed.append(fn_id)
         
         # Write modified document
-        temp_file = working_file + '.tmp'
+        # The replacement must also be private from creation, like the copy.
+        temp_fd, temp_file = tempfile.mkstemp(
+            prefix='.', suffix='.docx', dir=os.path.dirname(os.path.abspath(working_file))
+        )
+        os.close(temp_fd)
         with zipfile.ZipFile(temp_file, 'w', zipfile.ZIP_DEFLATED) as zout:
             with zipfile.ZipFile(filename, 'r') as zin:
                 for item in zin.infolist():
@@ -608,6 +616,9 @@ def delete_footnote_robust(
         
     except Exception as e:
         return False, f"Error deleting footnote: {str(e)}", None
+    finally:
+        if temp_file and os.path.exists(temp_file):
+            os.remove(temp_file)
 
 
 def validate_document_footnotes(filename: str) -> Tuple[bool, str, Dict[str, Any]]:
