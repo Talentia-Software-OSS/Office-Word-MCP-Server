@@ -58,18 +58,17 @@ def remove_protection_info(filename: str, password: Optional[str] = None) -> Tup
                         office_file = msoffcrypto.OfficeFile(f)
                         
                         # Decrypt with provided password
-                        try:
-                            office_file.load_key(password=password)
-                            
-                            # Write the decrypted file to the temp path
-                            with open(temp_path, 'wb') as out_file:
-                                office_file.decrypt(out_file)
-                            
-                            # Replace encrypted file with decrypted version:
-                            # atomic within the mount, and no metadata call.
-                            os.replace(temp_path, filename)
-                        except Exception as decrypt_error:
-                            return False, f"Failed to decrypt document: {str(decrypt_error)}"
+                        office_file.load_key(password=password)
+
+                        # Write the decrypted file to the temp path
+                        with open(temp_path, 'wb') as out_file:
+                            office_file.decrypt(out_file)
+
+                    # Close both handles before replacing (Windows sharing).
+                    # Atomic within the mount, and no metadata call.
+                    os.replace(temp_path, filename)
+                except Exception as decrypt_error:
+                    return False, f"Failed to decrypt document: {str(decrypt_error)}"
                 finally:
                     if os.path.exists(temp_path):
                         os.unlink(temp_path)

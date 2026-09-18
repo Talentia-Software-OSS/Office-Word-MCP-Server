@@ -232,6 +232,11 @@ copy_document(source_filename, destination_filename=None)
 convert_to_pdf(filename, output_filename=None)
 ```
 
+Document copies transfer bytes without copying timestamps or other metadata.
+New copies and footnote staging files request owner-only permissions (`0600`)
+on POSIX; overwriting an existing copy retains its permissions. Fixed-mode
+mounts such as Azure Files continue to enforce their configured permissions.
+
 ### Content Addition
 
 ```python
