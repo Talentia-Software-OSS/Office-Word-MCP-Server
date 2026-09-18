@@ -46,6 +46,55 @@ def test_copy_bytes_without_metadata(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert source.read_bytes() == payload
 
 
+@pytest.mark.parametrize("destination_state", ["new", "existing", "replaced", "removed"])
+def test_source_open_failure_cleans_only_own_new_destination(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, destination_state: str
+) -> None:
+    source = tmp_path / "source.docx"
+    destination = tmp_path / "copy.docx"
+    replacement = tmp_path / "replacement.docx"
+    source.write_bytes(b"source document")
+    preserved = b"another document must survive"
+    if destination_state == "existing":
+        destination.write_bytes(preserved)
+        before = destination.stat()
+    elif destination_state == "replaced":
+        replacement.write_bytes(preserved)
+        before = replacement.stat()
+
+    real_open = builtins.open
+    source_open_attempts = []
+
+    def deny_source_open(path: str, mode: str = "r", **kwargs: object) -> BinaryIO:
+        if path == str(source) and mode == "rb":
+            source_open_attempts.append(path)
+            if destination_state == "replaced":
+                os.replace(replacement, destination)
+            elif destination_state == "removed":
+                destination.unlink()
+            raise PermissionError(errno.EACCES, "source read denied")
+        return real_open(path, mode, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", deny_source_open)
+    _deny_metadata(monkeypatch)
+
+    success, message, copied = create_document_copy(str(source), str(destination))
+
+    assert source_open_attempts == [str(source)]
+    assert not success
+    assert "source read denied" in message
+    assert copied is None
+    assert source.read_bytes() == b"source document"
+    if destination_state in {"existing", "replaced"}:
+        assert destination.read_bytes() == preserved
+        after = destination.stat()
+        assert (after.st_ino, after.st_mode, after.st_mtime_ns) == (
+            before.st_ino, before.st_mode, before.st_mtime_ns
+        )
+    else:
+        assert not destination.exists()
+
+
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission bits")
 @pytest.mark.parametrize("source_mode", [0o600, 0o640])
 def test_copy_is_private_from_creation(

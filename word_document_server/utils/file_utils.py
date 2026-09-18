@@ -49,15 +49,30 @@ def copy_document_bytes(source_path: str, dest_path: str) -> None:
     Existing destinations retain their permissions. Fixed-mode mounts such as
     Azure Files enforce their mount permissions instead of the requested 0600.
     """
+    created_stat = None
     try:
         fd = os.open(dest_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     except FileExistsError:
         pass
     else:
-        os.close(fd)
+        try:
+            created_stat = os.fstat(fd)
+        finally:
+            os.close(fd)
     # Keep copyfile's same-file checks and byte-only copying. No chmod/copystat:
     # these can fail with EPERM on writable, differently owned SMB/CIFS files.
-    shutil.copyfile(source_path, dest_path)
+    try:
+        shutil.copyfile(source_path, dest_path)
+    except Exception:
+        if created_stat is not None:
+            try:
+                # Best-effort identity check: do not remove an observed
+                # replacement or follow a replacement symlink during cleanup.
+                if os.path.samestat(created_stat, os.lstat(dest_path)):
+                    os.unlink(dest_path)
+            except FileNotFoundError:
+                pass
+        raise
 
 
 def create_document_copy(source_path: str, dest_path: Optional[str] = None) -> Tuple[bool, str, Optional[str]]:
